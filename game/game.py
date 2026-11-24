@@ -79,7 +79,8 @@ class Game:
 
     def restart_game(self):
         if messagebox.askyesno("Restart Game", "Restart the championship from Grand Prix 1?"):
-            self.start_game()
+            # Keep the driver name entered at the beginning of this championship.
+            self.start_game(ask_name=False)
 
     def quit_game(self):
         if messagebox.askyesno("Quit Game", "Are you sure you want to quit Python Grand Prix?"):
@@ -105,7 +106,6 @@ class Game:
         RaceButton(inner, "START CHAMPIONSHIP", self.start_game, 300, 46, "success", 12).pack(pady=6)
         RaceButton(inner, "HOW TO PLAY", self.show_instructions, 300, 46, "neutral", 12).pack(pady=6)
         RaceButton(inner, "LEADERBOARD", self.show_leaderboard, 300, 46, "neutral", 12).pack(pady=6)
-        RaceButton(inner, "RESTART GAME", self.restart_game, 300, 46, "neutral", 12).pack(pady=6)
         RaceButton(inner, "QUIT GAME", self.quit_game, 300, 46, "danger", 12).pack(pady=6)
 
         recent = [r for r in load_scores() if r.get("type") == "race"]
@@ -153,7 +153,7 @@ class Game:
 
         self.button(self.root, "BACK", self.show_menu, 200).pack(pady=(4, 14))
 
-    def start_game(self):
+    def start_game(self, ask_name=True):
         for job_name in ("answer_transition_job", "pending_finish_job"):
             job_id = getattr(self, job_name, None)
             if job_id:
@@ -162,13 +162,14 @@ class Game:
                 except tk.TclError:
                     pass
                 setattr(self, job_name, None)
-        name = simpledialog.askstring("Driver Registration",
-                                      "Enter your driver name:",
-                                      parent=self.root)
-        if name and name.strip():
-            self.player_name = name.strip()[:18]
-        else:
-            self.player_name = "Racer"
+        if ask_name:
+            name = simpledialog.askstring("Driver Registration",
+                                          "Enter your driver name:",
+                                          parent=self.root)
+            if name and name.strip():
+                self.player_name = name.strip()[:18]
+            else:
+                self.player_name = "Racer"
 
         self.total_score = 0
         self.total_time = 0
