@@ -373,7 +373,12 @@ class Game:
         if idx == correct:
             self.correct += 1
             self.race_correct += 1
-            self.player_target_progress = min(0.9, self.race_correct / 10.0)
+            self.player_target_progress = min(1.0, self.race_correct / 10.0)
+            # The 10th correct answer is the player's finish-line crossing time.
+            if self.race_correct >= 10 and self.player_finish_time is None:
+                self.player_progress = 1.0
+                self.player_target_progress = 1.0
+                self.player_finish_time = time.time() - self.race_start + self.race_penalties
             gain = 25 + max(0, 10 - self.challenge_index)
             self.total_score += gain
             self.race_score += gain
@@ -384,11 +389,17 @@ class Game:
             self.grip = min(100, self.grip + 2)
             self.total_score += 10
             self.race_score += 10
-            self.feedback.config(
-                text=f"✓ CORRECT! +{gain} points\n"
-                     f"⚡ AUTOMATIC BOOST ACTIVATED! +25 speed, +10 bonus points\n"
-                     f"{explanation}\nNext question loading...",
-                fg=S.GREEN)
+            if self.race_correct >= 10:
+                self.feedback.config(
+                    text=f"🏁 10 CORRECT ANSWERS! FINISH LINE REACHED!\n"
+                         f"Your finish time is being compared with the rival cars.\n{explanation}",
+                    fg=S.GREEN)
+            else:
+                self.feedback.config(
+                    text=f"✓ CORRECT! +{gain} points\n"
+                         f"⚡ AUTOMATIC BOOST ACTIVATED! +25 speed, +10 bonus points\n"
+                         f"{explanation}\nNext question loading...",
+                    fg=S.GREEN)
         else:
             self.option_buttons[idx].mark("wrong")
             self.wrong += 1
@@ -414,6 +425,9 @@ class Game:
                 fg=S.RED)
 
         self.update_stats()
+        if self.race_correct >= 10:
+            # The race loop finalizes the result using the 10th-correct timestamp.
+            return
         # Briefly show feedback, then automatically move to the next question.
         self.answer_transition_job = self.root.after(350, self.next_checkpoint)
 
@@ -423,7 +437,9 @@ class Game:
 
     def next_checkpoint(self):
         self.answer_transition_job = None
-        # Every checkpoint consumes fuel; low fuel slows the car.
+        if self.player_finish_time is not None:
+            return
+        # Every question consumes fuel; low fuel slows the car.
         self.fuel = max(0, self.fuel - random.randint(4, 8))
         if self.fuel < 20:
             self.speed = max(20, self.speed - 8)
@@ -441,6 +457,9 @@ class Game:
                 # The player reaches the finish only after answering all 15 questions
                 # and earning at least 10 correct answers.
                 self.player_target_progress = 1.0
+                self.player_progress = 1.0
+                if self.player_finish_time is None:
+                    self.player_finish_time = time.time() - self.race_start + self.race_penalties
                 self.feedback.config(
                     text="10 correct answers achieved! Your car is heading for the finish line...",
                     fg=S.ACCENT
@@ -622,7 +641,9 @@ class Game:
                 if status == "not_enough_correct" else
                 "Position is based on the order cars crossed the finish line.")
         tk.Label(inner, text=note, font=font(9, True), fg=S.MUTED, bg=S.PANEL).pack(pady=(8, 0))
-        tk.Label(inner, text=f"Race position: P{place}", font=font(19, True, True, "display"),
+        ordinal = {1: "1st", 2: "2nd", 3: "3rd", 4: "4th"}.get(place, f"{place}th")
+        tk.Label(inner, text=f"Race position: {ordinal} PLACE  (P{place})",
+                 font=font(19, True, True, "display"),
                  fg=S.ACCENT, bg=S.PANEL).pack(pady=(12, 0))
 
         result_buttons = tk.Frame(self.root, bg=S.BG)

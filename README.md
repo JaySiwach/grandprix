@@ -75,3 +75,10 @@ The save file `pygp_save.json` is created in this folder after a completed champ
 - If all three NPCs finish first, the player receives P4 and cannot advance to the next Grand Prix.
 - If the fourth wrong answer ends the current Grand Prix, the next Grand Prix remains locked.
 - The next-race action also checks completion internally, so it cannot be triggered by bypassing the hidden/disabled button.
+
+
+## Finish-line ranking
+
+- The player crosses the finish line immediately after the 10th correct answer.
+- The game compares that timestamp with NPC finish times. First to finish is 1st, next is 2nd, next is 3rd, and last is 4th.
+- Players may answer up to 15 questions to reach 10 correct. The third wrong answer still ends the current Grand Prix.
